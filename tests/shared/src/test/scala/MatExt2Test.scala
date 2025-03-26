@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-//import slash.vector.Vec
+import slash.vector.Vec
 import slash.matrix.*
 
 class MatExt2Test extends munit.FunSuite {
@@ -114,4 +114,70 @@ class MatExt2Test extends munit.FunSuite {
     assert(all.strictEquals(expected))
   }
 
+  test("m.upper is as expected"){
+    val m = Mat[3,3](
+       1,  2,  3,
+       4,  5,  6,
+       7,  8,  9,
+    )
+    val upr = m.upper
+    val expect = Mat[3,3](
+       1,  2,  3,
+       0,  5,  6,
+       0,  0,  9,
+    )
+    printf("upr[%s]\n", upr.toString)
+    printf("exp[%s]\n", expect.toString)
+    assert(upr.strictEquals(expect))
+  }
+
+  test("m.lower is as expected"){
+    val m = Mat[3,3](
+       1,  2,  3,
+       4,  5,  6,
+       7,  8,  9,
+    )
+    val low = m.lower
+    val expect = Mat[3,3](
+       1,  0,  0,
+       4,  5,  0,
+       7,  8,  9,
+    )
+    printf("low[%s]\n", low.toString)
+    printf("exp[%s]\n", expect.toString)
+    assert(low.strictEquals(expect))
+  }
+  test("m.diagvec is as expected for a wide Mat"){
+    val m = Mat[4,3](
+       1,  2,  3,
+       4,  5,  6,
+       7,  8,  9,
+      10, 11, 12,
+    )
+    val diag: Vec[3] = m.diagvec
+    val expect = Vec[3](1,  5,  9)
+    printf("diag:\n%s\n",diag.show)
+    printf("expe:\n%s\n",expect.show)
+    assert(diag.show == expect.show)
+  }
+  test("m.diagvec is as expected for a tall Mat"){
+    val m = Mat[3,4](
+       1,  2,  3,  4,
+       5,  6,  7,  8,
+       9, 10, 11, 12,
+    )
+    val diag: Vec[3] = m.diagvec
+    val expect = Vec[3](1, 6, 11)
+    printf("diag:\n%s\n",diag.show)
+    printf("expe:\n%s\n",expect.show)
+    assert(diag.show == expect.show)
+  }
+
+  test("linspace produces expected result"){
+    val v = Vec.linspace[5](-1, +1)
+    val expect = Vec[5](-1.0, -0.5, 0.0, 0.5, 1.0)
+    printf("%s\n",v.show)
+    printf("%s\n",expect.show)
+    assert(v.asRowMatrix.strictEquals(expect.asRowMatrix))
+  }
 }

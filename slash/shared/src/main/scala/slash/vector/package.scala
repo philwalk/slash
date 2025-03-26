@@ -556,23 +556,33 @@ package object vector {
       def +[N <: Int](v: Vec[N]):Vec[N] = v + d
     }
 
-    /*
-    def linspace[N <: Int](start: Number, stop: Number)(using ValueOf[N]): Vec[N] = {
-      val count = valueOf[N]
+    inline def asDouble(inline num: Number): Double = {
+      inline num match {
+      case d: Double => d
+      case i: Int => i.toDouble
+      case l: Long => l.toDouble
+      case f: Float => f.toDouble
+      }
+    }
+
+    def linspace[N <: Int](start: Double, stop: Double)(using ValueOf[N]): Vec[N] = {
+      val count: Int = valueOf[N]
       assert(count > 1, s"count == $count")
-      var arr = new NArray[Double](count)
-      var d0 = toDouble(start)
-      var d1 = toDouble(stop)
-      val dincr = (d1 - d0) / (count-1).toDouble
+      val arr = new NArray[Double](count)
+      val dincr: Double = (stop - start) / (count-1).toDouble
+      var d0: Double = start
       var i = 0
       while(i < count) { 
         arr(i) = d0
         d0 += dincr
         i += 1
       }
-      Vec[N](arr *)
+      arr.asInstanceOf[Vec[N]]
     }
-    */
+
+    def linspace[N <: Int](start: Int, stop: Int)(using ValueOf[N]): Vec[N] = {
+      linspace[N](start.toDouble, stop.toDouble)
+    }
   }
 
   export Vec.*

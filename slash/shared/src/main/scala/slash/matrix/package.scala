@@ -82,6 +82,7 @@ package object matrix {
      */
     def determinant: Double = LU[MN, MN](m).determinant
 
+    
   }
 
 
@@ -126,10 +127,7 @@ package object matrix {
       val nums = for {
         i <- 0 until a.rows
         j <- 0 until a.columns
-        e: Double = a(i,j) match {
-        case e: Double if (i<j) => 0.0
-        case e: Double => e
-        }
+        e: Double = if (i>j) 0.0 else a(i,j)
       } yield e
       new Mat[M,N](NArray(nums *))
     }
@@ -138,12 +136,19 @@ package object matrix {
       val nums = for {
         i <- 0 until a.rows
         j <- 0 until a.columns
-        e: Double = a(i,j) match {
-        case e: Double if (i>j) => 0.0
-        case e: Double => e
-        }
+        e: Double = if (i<j) 0.0 else a(i,j)
       } yield e
       new Mat[M,N](NArray(nums *))
+    }
+
+    inline def diagvec: Vec[Min[M,N]] = {
+      val dim: Int = valueOf[M].min(valueOf[N])
+      val nums = for {
+        i <- 0 until a.rows
+        j <- 0 until a.columns
+        if i == j
+      } yield a(i,j)
+      Vec[Min[M,N]](nums *)
     }
   }
 
@@ -211,8 +216,10 @@ package object matrix {
     inline def copyAsVector[MN <: Int](using MN == (M * N) =:= true): Vec[MN] = narr.copy[Double](m.values).asInstanceOf[Vec[MN]]
   }
 
-  type Min[A <: Int, B <: Int] = A < B match
-    case true  => A // If A < B, the minimum is A
-    case false => B // Otherwise, the minimum is B
+  /*
+  type MinDim[M <: Int, N <: Int] = M < N match
+    case true  => M // If A < B, the minimum is A
+    case false => N // Otherwise, the minimum is B
+    */
 
 }
