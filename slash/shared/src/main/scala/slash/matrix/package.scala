@@ -18,6 +18,7 @@ package slash
 
 import narr.*
 import slash.vector.{Vec, *}
+import slash.matrix.Mat.{Number, toDouble}
 import slash.matrix.decomposition.{SV, *}
 
 import scala.compiletime.ops.int.*
@@ -32,6 +33,26 @@ package object matrix {
 
     def times [M <: Int](thatMatrix: Mat[N, M])(using ValueOf[M]): Mat[1, M] = asRowMatrix * thatMatrix
     inline def * [M <: Int](thatMatrix: Mat[N, M])(using ValueOf[M]): Mat[1, M] = times(thatMatrix)
+  }
+
+  /**
+   * Extension Methods to support right addition and multiplication by scalars.
+   */
+  extension(s: Double) {
+    // to support s + m
+    inline def +[M <: Int, N <: Int](inline m: Mat[M,N])(using ValueOf[M], ValueOf[N]): Mat[M,N] = m.copy.addScalar(s)
+    inline def +=[M <: Int, N <: Int](inline m: Mat[M,N])(using ValueOf[M], ValueOf[N]): Mat[M,N] = m.addScalar(s)
+    // to support s * m
+    inline def *[M <: Int, N <: Int](inline m: Mat[M,N])(using ValueOf[M], ValueOf[N]): Mat[M,N] = m.copy.times(s)
+    inline def *=[M <: Int, N <: Int](inline m: Mat[M,N])(using ValueOf[M], ValueOf[N]): Mat[M,N] = m.times(s)
+  }
+  extension(s: Int) {
+    // to support s + m
+    inline def +[M <: Int, N <: Int](inline m: Mat[M,N])(using ValueOf[M], ValueOf[N]): Mat[M,N] = m.copy.addScalar(s.toDouble)
+    inline def +=[M <: Int, N <: Int](inline m: Mat[M,N])(using ValueOf[M], ValueOf[N]): Mat[M,N] = m.addScalar(s.toDouble)
+    // to support s * m
+    inline def *[M <: Int, N <: Int](inline m: Mat[M,N])(using ValueOf[M], ValueOf[N]): Mat[M,N] = m.copy.times(s.toDouble)
+    inline def *=[M <: Int, N <: Int](inline m: Mat[M,N])(using ValueOf[M], ValueOf[N]): Mat[M,N] = m.times(s.toDouble)
   }
 
   /**
@@ -65,6 +86,68 @@ package object matrix {
 
 
   /**
+   * Extension methods for all matrices.
+   */
+  extension[M <: Int, N <: Int](a: Mat[M, N])(using ValueOf[M], ValueOf[N]) {
+    /** element-wise matrix add by a scalar
+    *
+    * @param s scalar
+    * @return A+s
+    */
+    inline def + (s: Number): Mat[M,N] = a.copy.addScalar(toDouble(s))
+
+    /** A = A + d
+    *
+    * @param d a scalar
+    * @return A + d
+    */
+    def addScalar(num: Number)(using ValueOf[N]): Mat[M,N] = {
+      val d = toDouble(num)
+      for(i <- 0 until a.rows){
+        for(j <- 0 until a.columns){
+          a(i,j) += d
+        }
+      }
+      a
+    }
+
+    def reshape[R <: Int, C <: Int](using ValueOf[R], ValueOf[C]): Mat[R,C] = {
+      val (msize,nsize) = (valueOf[M], valueOf[N])
+      val (r,c) = (valueOf[R], valueOf[C])
+      require(msize*nsize == r*c, s"$msize x $nsize != $r x $c")
+      val nums = for {
+        i <- 0 until msize
+        j <- 0 until nsize
+      } yield a(i,j)
+      new Mat[R,C](NArray(nums *))
+    }
+
+    def upper: Mat[M,N] = {
+      val nums = for {
+        i <- 0 until a.rows
+        j <- 0 until a.columns
+        e: Double = a(i,j) match {
+        case e: Double if (i<j) => 0.0
+        case e: Double => e
+        }
+      } yield e
+      new Mat[M,N](NArray(nums *))
+    }
+
+    def lower: Mat[M,N] = {
+      val nums = for {
+        i <- 0 until a.rows
+        j <- 0 until a.columns
+        e: Double = a(i,j) match {
+        case e: Double if (i>j) => 0.0
+        case e: Double => e
+        }
+      } yield e
+      new Mat[M,N](NArray(nums *))
+    }
+  }
+
+  /**
    * Extension methods for rectangular matrices.
    */
   extension[M <: Int, N <: Int](a: Mat[M, N])(using ValueOf[M], ValueOf[N], ValueOf[Min[M, N]], (N =:= M) =:= false) {
@@ -74,11 +157,12 @@ package object matrix {
      * @return least squares solution x = Mat[M, V] such that a * x = b
      */
     def solve[V <: Int](b: Mat[M, V])(using ValueOf[V]): Mat[N, V] = QR[M, N](a).solve(b)
+
   }
+
   /**
    * Extension methods for rectangular matrices where M > N.
    */
-
   extension[M <: Int, N <: Int](m: Mat[M, N])(using ValueOf[M], ValueOf[N], ValueOf[Min[M, N]], M >= N =:= true) {
     /** Solve b * m = I[N, N]
      * m = Mat[M, N] with M > N and Rank = N, has a left inverse b = Mat[N, M] such that b * m = I[N, N]
@@ -113,7 +197,6 @@ package object matrix {
   /**
    * Extension methods for rectangular matrices where M < N.
    */
-
   extension[M <: Int, N <: Int](m: Mat[M, N])(using ValueOf[M], ValueOf[N], ValueOf[Min[M, N]], N > M =:= true) {
     /**
      * m = Mat[M, N] with M < N and Rank = M, has a right inverse b = Mat[N, M] such that m * b = Identity[M, M]
@@ -127,5 +210,9 @@ package object matrix {
     def asVector: Vec[M*N] = m.values.asInstanceOf[Vec[M*N]]
     inline def copyAsVector[MN <: Int](using MN == (M * N) =:= true): Vec[MN] = narr.copy[Double](m.values).asInstanceOf[Vec[MN]]
   }
+
+  type Min[A <: Int, B <: Int] = A < B match
+    case true  => A // If A < B, the minimum is A
+    case false => B // Otherwise, the minimum is B
 
 }

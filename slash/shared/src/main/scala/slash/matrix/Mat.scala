@@ -21,7 +21,6 @@ import slash.vector.*
 
 import scala.compiletime.ops.int.*
 import scala.math.hypot
-//import narr.NArray
 import scala.compiletime.{constValue, summonInline}
 
 /**
@@ -307,6 +306,53 @@ object Mat {
     case (r, c) =>
       new Mat[r.type, c.type](v)
     }
+  }
+
+  /** Horizontal tiling of one or more matrices (having same number of rows) */
+  def horzcat(matrices: Mat[?,?] *): Mat[? <: Int,? <: Int] = {
+    if (matrices.isEmpty) throw new IllegalArgumentException("empty parameter list")
+    val numRows = matrices.map(_.rows).toList.distinct match {
+    case num :: Nil =>
+      num
+    case list =>
+      sys.error(s"Matrices have diverse number of rows: $list")
+    }
+    //require(matrices.tail.forall(m => m.rows == numRows), "Not all matrices have the same number of rows")
+    val numCols = matrices.map(_.columns).sum
+    val res = Mat.zeros[numRows.type,numCols.type]
+    var offset = 0
+    for (m <- matrices) {
+      for (i <- 0 until numRows) {
+        for (j <- 0 until m.columns) {
+          res(i,j+offset) = m(i,j)
+        }
+      }
+      offset += m.columns
+    }
+    res
+  }
+
+  /** Vertical tiling of one or more matrices (having same number of columns) */
+  inline def vertcat(matrices: Mat[?,?] *): Mat[? <: Int,? <: Int] = {
+    if (matrices.isEmpty) throw new IllegalArgumentException("empty parameter list")
+    val numCols = matrices.map(_.columns).toList.distinct match {
+    case num :: Nil =>
+      num
+    case list =>
+      sys.error(s"Matrices have diverse number of columns: $list")
+    }
+    val numRows = matrices.map(_.rows).sum
+    val res = Mat.zeros[numRows.type, numCols.type]
+    var offset = 0
+    for (m <- matrices) {
+      for (i <- 0 until m.rows) {
+        for (j <- 0 until numCols) {
+          res(i+offset,j) = m(i,j)
+        }
+      }
+      offset += m.rows
+    }
+    res
   }
 
   type Number = Int | Float | Double | Long
@@ -758,16 +804,35 @@ class Mat[M <: Int, N <: Int](val values: NArray[Double])(using ValueOf[M], Valu
     * @param s scalar
     * @return s*A
     */
-  inline def * (s: Double): Mat[M, N] = copy.times(s)
-
-  inline def += (s:Double):Mat[M, N] = times(s)
+  inline def * (s: Int|Double): Mat[M, N] = {
+    val d: Double = s match {
+      case d: Double => d
+      case i: Int => i.toDouble
+    }
+    copy.times(d)
+  }
+  inline def *=(s: Int|Double): Mat[M, N] = {
+    val d: Double = s match {
+      case d: Double => d
+      case i: Int => i.toDouble
+    }
+    times(d)
+  }
 
   /** Multiply a matrix by a scalar in place, A = s*A
     *
     * @param s scalar
     * @return replace A by s*A
     */
-  def times(s: Double): Mat[M, N] = {
+  inline def times(s: Double): Mat[M, N] = {
+    var i:Int = 0; while (i < values.length) {
+      values(i) = values(i) * s
+      i += 1
+    }
+    this
+  }
+  inline def times(num: Int): Mat[M, N] = {
+    inline val s: Double = num.toDouble
     var i:Int = 0; while (i < values.length) {
       values(i) = values(i) * s
       i += 1
