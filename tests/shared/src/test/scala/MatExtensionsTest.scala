@@ -157,6 +157,22 @@ class MatExtensionsTest extends munit.FunSuite {
     )
     assert(m1.rows == 2 && m1.columns == 3, s"error handling special case [$m1]")
   }
+  test("single row Mat from a single tuple"){
+    val m1 = Mat[1,4]((1,2,3,4))
+    assert(m1.rows == 1 && m1.columns == 4)
+  }
+  test("single row Mat from numeric args representing a single row"){
+    val m2 = Mat[1,4](1,2,3,4)
+    assert(m2.rows == 1 && m2.columns == 4)
+  }
+  test("single row Mat from a single tuple"){
+    val m3 = Mat.fromTuple((1,2,3,4))
+    assert(m3.rows == 1 && m3.columns == 4)
+  }
+  test("single row Mat from numeric args representing a single row"){
+    val m4 = Mat.fromTuple(1,2,3,4)
+    assert(m4.rows == 1 && m4.columns == 4)
+  }
 
   test("Mat with various dimension declarations equate"){
     val m1:Mat[3,3] = Mat[3,3]((

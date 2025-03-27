@@ -223,9 +223,9 @@ object Mat {
    * @tparam N the number of columns
    * @return an M x N matrix consisting of values.
    */
-  def apply[M <: Int, N <: Int](val0: Number, values: Number*)(using ValueOf[M], ValueOf[N]):Mat[M, N] = {
-    dimensionCheck(values.size+1, valueOf[M] * valueOf[N])
-    new Mat[M, N](NArray[Double]((val0 :: values.toList).map(toDouble) *))
+  def apply[M <: Int, N <: Int](values: Double*)(using ValueOf[M], ValueOf[N]):Mat[M, N] = {
+    dimensionCheck(values.size, valueOf[M] * valueOf[N])
+    new Mat[M, N](NArray[Double](values *))
   }
 
   /** Construct a Mat from a tuple literal.
@@ -403,30 +403,6 @@ object Mat {
       case (r, c) =>
       new Mat[M,N](values)
     }
-  }
-
-  /** Construct 1xN a matrix from a varargs of type Numeric.
-   * @param values One-dimensional array of Numeric.
-   */
-  def mat(values: Number *): Mat[? <: Int, ? <: Int] = {
-    val rows: Int = 1
-    val cols: Int = values.size
-    val matsize1: Int = rows * cols
-    val v:NArray[Double] = new NArray[Double](matsize1)
-    val itr1:Iterator[Any] = values.iterator
-    var i:Int = 0
-    while (itr1.hasNext) {
-      itr1.next match {
-      case n: Number =>
-        v(i) = toDouble(n)
-      case x =>
-        v(i) = Double.NaN
-      }
-      i += 1
-    }
-    type M = 1
-    type N = cols.type
-    new Mat[M,N](v)
   }
 
   type Number = Int | Float | Long | Double
